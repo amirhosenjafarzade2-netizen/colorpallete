@@ -11,10 +11,7 @@ from utils import generate_palette
 @st.cache_data
 def cached_generate_palette(base_hex, style, num_colors, hue_shift=0.1, saturation_boost=0.5):
     try:
-        palette = generate_palette(base_hex, style, num_colors, hue_shift, saturation_boost)
-        if not palette:
-            raise ValueError("Empty palette returned")
-        return palette
+        return generate_palette(base_hex, style, num_colors, hue_shift, saturation_boost)
     except Exception as e:
         st.error(f"Palette generation failed: {str(e)}")
         return [base_hex]
@@ -25,81 +22,64 @@ def is_valid_hex(hex_str):
 
 # Convert hex to RGB for Matplotlib
 def hex_to_rgb_mpl(hex_str):
-    try:
-        hex_str = hex_str.lstrip('#')
-        return tuple(int(hex_str[i:i+2], 16) / 255.0 for i in (0, 2, 4))
-    except Exception:
-        return (1.0, 1.0, 1.0)  # Fallback to white
+    hex_str = hex_str.lstrip('#')
+    return tuple(int(hex_str[i:i+2], 16) / 255.0 for i in (0, 2, 4))
 
 # Matplotlib rendering functions
 def render_rainbow_arc(palette):
-    try:
-        fig, ax = plt.subplots(figsize=(6, 2))
-        for i, color in enumerate(palette):
-            ax.add_patch(plt.Rectangle((i * 0.2, 0), 0.2, 1, color=hex_to_rgb_mpl(color)))
-            ax.text(i * 0.2 + 0.1, 0.5, color, ha='center', va='center', fontsize=8, color='white')
-        ax.set_xlim(0, len(palette) * 0.2)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        return fig
-    except Exception as e:
-        st.error(f"Rainbow arc rendering failed: {str(e)}")
-        return None
+    fig, ax = plt.subplots(figsize=(6, 3))
+    for i, color in enumerate(palette):
+        ax.add_patch(plt.Rectangle((i * 0.2, 0), 0.2, 1, color=hex_to_rgb_mpl(color)))
+    ax.set_xlim(0, len(palette) * 0.2)
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+    return fig
 
 def render_hexagon_grid(palette):
-    try:
-        fig, ax = plt.subplots(figsize=(6, 6))
-        for i, color in enumerate(palette):
-            row = i // 5
-            col = i % 5
-            hexagon = plt.Polygon([
-                (col + 0.5, row + 0.866), (col + 1, row + 0.5), (col + 1, row),
-                (col + 0.5, row - 0.866), (col, row - 0.5), (col, row)
-            ], facecolor=hex_to_rgb_mpl(color))
-            ax.add_patch(hexagon)
-            ax.text(col + 0.5, row, color, ha='center', va='center', fontsize=6, color='white')
-        ax.set_xlim(-0.5, 5.5)
-        ax.set_ylim(-1, len(palette) // 5 + 1)
-        ax.axis('off')
-        return fig
-    except Exception as e:
-        st.error(f"Hexagon grid rendering failed: {str(e)}")
-        return None
+    fig, ax = plt.subplots(figsize=(6, 6))
+    for i, color in enumerate(palette):
+        row = i // 5
+        col = i % 5
+        hexagon = plt.Polygon([
+            (col + 0.5, row + 0.866), (col + 1, row + 0.5), (col + 1, row),
+            (col + 0.5, row - 0.866), (col, row - 0.5), (col, row)
+        ], facecolor=hex_to_rgb_mpl(color))
+        ax.add_patch(hexagon)
+        ax.text(col + 0.5, row, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
+                ha='center', va='center', fontsize=8, color='white')
+    ax.set_xlim(-0.5, 5.5)
+    ax.set_ylim(-1, len(palette) // 5 + 1)
+    ax.axis('off')
+    return fig
 
 def render_spiral_swirl(palette):
-    try:
-        fig, ax = plt.subplots(figsize=(6, 6))
-        for i, color in enumerate(palette):
-            angle = i * 137.5 * np.pi / 180
-            radius = 0.5 * np.sqrt(i + 1)
-            x = 3 + radius * np.cos(angle)
-            y = 3 + radius * np.sin(angle)
-            ax.add_patch(plt.Circle((x, y), 0.3, color=hex_to_rgb_mpl(color)))
-            ax.text(x, y, color, ha='center', va='center', fontsize=6, color='white')
-        ax.set_xlim(0, 6)
-        ax.set_ylim(0, 6)
-        ax.axis('off')
-        return fig
-    except Exception as e:
-        st.error(f"Spiral swirl rendering failed: {str(e)}")
-        return None
+    fig, ax = plt.subplots(figsize=(6, 6))
+    for i, color in enumerate(palette):
+        angle = i * 137.5 * np.pi / 180  # Golden angle
+        radius = 0.5 * np.sqrt(i + 1)
+        x = 3 + radius * np.cos(angle)
+        y = 3 + radius * np.sin(angle)
+        ax.add_patch(plt.Circle((x, y), 0.3, color=hex_to_rgb_mpl(color)))
+        ax.text(x, y, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
+                ha='center', va='center', fontsize=6, color='white')
+    ax.set_xlim(0, 6)
+    ax.set_ylim(0, 6)
+    ax.axis('off')
+    return fig
 
 def render_color_wheel(palette):
-    try:
-        fig, ax = plt.subplots(figsize=(6, 6))
-        for i, color in enumerate(palette):
-            angle = i * 2 * np.pi / len(palette)
-            x = 3 + 2 * np.cos(angle)
-            y = 3 + 2 * np.sin(angle)
-            ax.add_patch(plt.Circle((x, y), 0.5, color=hex_to_rgb_mpl(color)))
-            ax.text(x, y, color, ha='center', va='center', fontsize=6, color='white')
-        ax.set_xlim(0, 6)
-        ax.set_ylim(0, 6)
-        ax.axis('off')
-        return fig
-    except Exception as e:
-        st.error(f"Color wheel rendering failed: {str(e)}")
-        return None
+    fig, ax = plt.subplots(figsize=(6, 6))
+    for i, color in enumerate(palette):
+        angle = i * 2 * np.pi / len(palette)
+        x = 3 + 2 * np.cos(angle)
+        y = 3 + 2 * np.sin(angle)
+        ax.add_patch(plt.Circle((x, y), 0.5, color=hex_to_rgb_mpl(color)))
+        ax.text(x, y, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
+                ha='center', va='center', fontsize=6, color='white')
+    ax.set_xlim(0, 6)
+    ax.set_ylim(0, 6)
+    ax.axis('off')
+    return fig
 
 # Session state
 if 'custom_colors' not in st.session_state:
@@ -135,7 +115,7 @@ st.markdown("""
 }
 .library-grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
     gap: 10px; 
 }
 </style>
@@ -186,7 +166,9 @@ with col1:
     hue_shift = st.slider("Hue Shift Range", 0.0, 1.0, 0.1, help="Controls hue variation")
     saturation_boost = st.slider("Saturation Boost", 0.0, 1.0, 0.5, help="Adjusts color intensity")
     display_style = st.selectbox("Display Style", [
-        'rectangle_bars', 'hexagon_grid', 'spiral_swirl', 'color_wheel', 'rainbow_arc'
+        'rectangle_bars', 'hexagon_grid', 'spiral_swirl', 'color_wheel', 
+        'rainbow_arc', 'chevron', 'circles', 'squares', 'gradient_strip', 
+        'zigzag', 'waves', 'dots', 'tiles', '3d_cube'
     ])
 
 if st.button("Generate Palette"):
@@ -197,8 +179,7 @@ if st.button("Generate Palette"):
                 palette += random.sample([c['hex'] for c in COLORS], num_colors - len(palette))
                 st.warning("Palette padded with random colors due to generation constraints.")
             st.session_state.palette = palette
-            st.session_state.display_style = display_style
-            st.success("Palette generated successfully!")
+            st.session_state.display_style = display_style  # Store selected display style
         except Exception as e:
             st.error(f"Error generating palette: {str(e)}")
             st.session_state.palette = None
@@ -207,37 +188,74 @@ if st.button("Generate Palette"):
 if st.session_state.palette:
     with col2:
         st.header(f"{style.replace('_', ' ').upper()} Palette")
-        st.write(f"Selected Display Style: {st.session_state.display_style}")
-        st.write(f"Palette Colors: {st.session_state.palette}")
+        st.write(f"Selected Display Style: {display_style}")  # Debug: Confirm display style
         
         try:
             # Matplotlib-based styles
-            if st.session_state.display_style in ['rainbow_arc', 'hexagon_grid', 'spiral_swirl', 'color_wheel']:
-                fig = None
-                if st.session_state.display_style == 'rainbow_arc':
+            if display_style in ['rainbow_arc', 'hexagon_grid', 'spiral_swirl', 'color_wheel']:
+                if display_style == 'rainbow_arc':
                     fig = render_rainbow_arc(st.session_state.palette)
-                elif st.session_state.display_style == 'hexagon_grid':
+                elif display_style == 'hexagon_grid':
                     fig = render_hexagon_grid(st.session_state.palette)
-                elif st.session_state.display_style == 'spiral_swirl':
+                elif display_style == 'spiral_swirl':
                     fig = render_spiral_swirl(st.session_state.palette)
-                elif st.session_state.display_style == 'color_wheel':
+                elif display_style == 'color_wheel':
                     fig = render_color_wheel(st.session_state.palette)
-                
-                if fig:
-                    st.pyplot(fig)
-                    plt.close(fig)
-                else:
-                    st.error(f"Failed to render {st.session_state.display_style}")
+                st.pyplot(fig)
+                plt.close(fig)  # Close figure to free memory
             
-            # HTML-based style (default)
-            else:
+            # HTML/CSS-based styles
+            elif display_style == 'rectangle_bars':
                 st.markdown("Rectangle Bars")
-                cols = st.columns(min(len(st.session_state.palette), 5))  # Limit columns for layout
+                cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
-                    with cols[i % 5]:
+                    with cols[i]:
                         name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
                         st.markdown(
-                            f"<div class='palette-box' style='background:{color}; height:120px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}<br><button class='copy-hex' onclick='copyToClipboard(\"{color}\")'>Copy Hex</button></div>",
+                            f"<div class='palette-box' style='background:{color}; height:150px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}<br><button class='copy-hex' onclick='copyToClipboard(\"{color}\")'>Copy Hex</button></div>",
+                            unsafe_allow_html=True
+                        )
+            
+            elif display_style == 'tiles':
+                st.markdown("Tiles")
+                html = "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap:5px;'>"
+                for i, color in enumerate(st.session_state.palette):
+                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                    html += f"<div class='palette-box' style='background:{color}; width:80px; height:80px; color:white; padding:5px;'><b>{name}</b><br>{color}</div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == 'squares':
+                st.markdown("Squares")
+                cols = st.columns(len(st.session_state.palette))
+                for i, color in enumerate(st.session_state.palette):
+                    with cols[i]:
+                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                        st.markdown(
+                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}</div>",
+                            unsafe_allow_html=True
+                        )
+            
+            elif display_style == 'circles':
+                st.markdown("Circles")
+                cols = st.columns(len(st.session_state.palette))
+                for i, color in enumerate(st.session_state.palette):
+                    with cols[i]:
+                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                        st.markdown(
+                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; border-radius:50%; text-align:center; color:white; padding:20px;'><b>{name}</b><br>{color}</div>",
+                            unsafe_allow_html=True
+                        )
+            
+            # Fallback for unimplemented styles
+            else:
+                st.markdown(f"{display_style.replace('_', ' ').title()} (Fallback)")
+                cols = st.columns(len(st.session_state.palette))
+                for i, color in enumerate(st.session_state.palette):
+                    with cols[i]:
+                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                        st.markdown(
+                            f"<div class='palette-box' style='background:{color}; height:100px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}</div>",
                             unsafe_allow_html=True
                         )
             
@@ -249,23 +267,22 @@ if st.session_state.palette:
             # Download palette
             palette_data = [{"name": next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated"), "hex": color} for color in st.session_state.palette]
             st.download_button("Download JSON", json.dumps(palette_data, indent=2), "palette.json")
+            
+            # Debug: Show raw palette
+            st.write("Raw Palette Hex Codes:", st.session_state.palette)
         
         except Exception as e:
             st.error(f"Error displaying palette: {str(e)}")
-            # Fallback text display
-            st.markdown("**Fallback Display (Text)**")
-            for i, color in enumerate(st.session_state.palette):
-                name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                st.write(f"Color {i+1}: {name} ({color})")
+            st.write("Raw Palette Hex Codes:", st.session_state.palette)
 
 # DISPLAY SAVED PALETTES
 if st.session_state.saved_palettes:
     st.header("Saved Palettes")
     for i, saved_palette in enumerate(st.session_state.saved_palettes):
         st.markdown(f"**Palette {i+1}**")
-        cols = st.columns(min(len(saved_palette), 5))
+        cols = st.columns(len(saved_palette))
         for j, color in enumerate(saved_palette):
-            with cols[j % 5]:
+            with cols[j]:
                 st.markdown(f"<div style='background:{color}; height:50px; border-radius:5px;'></div>", unsafe_allow_html=True)
 
 # COLOR LIBRARY TOGGLE
