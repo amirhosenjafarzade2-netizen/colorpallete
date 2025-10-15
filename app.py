@@ -2,6 +2,8 @@ import streamlit as st
 import re
 import random
 import json
+import matplotlib.pyplot as plt
+import numpy as np
 from colors import COLORS
 from utils import generate_palette
 
@@ -18,6 +20,67 @@ def cached_generate_palette(base_hex, style, num_colors, hue_shift=0.1, saturati
 def is_valid_hex(hex_str):
     return bool(re.match(r'^#[0-9A-Fa-f]{6}$', hex_str))
 
+# Convert hex to RGB for Matplotlib
+def hex_to_rgb_mpl(hex_str):
+    hex_str = hex_str.lstrip('#')
+    return tuple(int(hex_str[i:i+2], 16) / 255.0 for i in (0, 2, 4))
+
+# Matplotlib rendering functions
+def render_rainbow_arc(palette):
+    fig, ax = plt.subplots(figsize=(6, 3))
+    for i, color in enumerate(palette):
+        ax.add_patch(plt.Rectangle((i * 0.2, 0), 0.2, 1, color=hex_to_rgb_mpl(color)))
+    ax.set_xlim(0, len(palette) * 0.2)
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+    return fig
+
+def render_hexagon_grid(palette):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    for i, color in enumerate(palette):
+        row = i // 5
+        col = i % 5
+        hexagon = plt.Polygon([
+            (col + 0.5, row + 0.866), (col + 1, row + 0.5), (col + 1, row),
+            (col + 0.5, row - 0.866), (col, row - 0.5), (col, row)
+        ], facecolor=hex_to_rgb_mpl(color))
+        ax.add_patch(hexagon)
+        ax.text(col + 0.5, row, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
+                ha='center', va='center', fontsize=8, color='white')
+    ax.set_xlim(-0.5, 5.5)
+    ax.set_ylim(-1, len(palette) // 5 + 1)
+    ax.axis('off')
+    return fig
+
+def render_spiral_swirl(palette):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    for i, color in enumerate(palette):
+        angle = i * 137.5 * np.pi / 180  # Golden angle
+        radius = 0.5 * np.sqrt(i + 1)
+        x = 3 + radius * np.cos(angle)
+        y = 3 + radius * np.sin(angle)
+        ax.add_patch(plt.Circle((x, y), 0.3, color=hex_to_rgb_mpl(color)))
+        ax.text(x, y, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
+                ha='center', va='center', fontsize=6, color='white')
+    ax.set_xlim(0, 6)
+    ax.set_ylim(0, 6)
+    ax.axis('off')
+    return fig
+
+def render_color_wheel(palette):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    for i, color in enumerate(palette):
+        angle = i * 2 * np.pi / len(palette)
+        x = 3 + 2 * np.cos(angle)
+        y = 3 + 2 * np.sin(angle)
+        ax.add_patch(plt.Circle((x, y), 0.5, color=hex_to_rgb_mpl(color)))
+        ax.text(x, y, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
+                ha='center', va='center', fontsize=6, color='white')
+    ax.set_xlim(0, 6)
+    ax.set_ylim(0, 6)
+    ax.axis('off')
+    return fig
+
 # Session state
 if 'custom_colors' not in st.session_state:
     st.session_state.custom_colors = []
@@ -30,7 +93,7 @@ if 'show_library' not in st.session_state:
 
 all_colors = COLORS + st.session_state.custom_colors
 
-# Custom CSS for enhanced visuals
+# Custom CSS for HTML-based styles
 st.markdown("""
 <style>
 .stApp { 
@@ -49,29 +112,6 @@ st.markdown("""
     border: none; 
     padding: 5px 10px; 
     border-radius: 5px;
-}
-.hexagon { 
-    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-    width: 80px; 
-    height: 80px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-}
-.spiral { 
-    border-radius: 50%;
-}
-.color-wheel { 
-    position: relative; 
-    width: 300px; 
-    height: 300px; 
-    margin: auto;
-}
-.cube-face { 
-    transform-style: preserve-3d; 
-    width: 100px; 
-    height: 100px; 
-    position: absolute;
 }
 .library-grid { 
     display: grid; 
@@ -126,9 +166,9 @@ with col1:
     hue_shift = st.slider("Hue Shift Range", 0.0, 1.0, 0.1, help="Controls hue variation")
     saturation_boost = st.slider("Saturation Boost", 0.0, 1.0, 0.5, help="Adjusts color intensity")
     display_style = st.selectbox("Display Style", [
-        'rectangle_bars', 'hexagon_grid', 'spiral_swirl', 'mosaic_tiles', 'color_wheel', 
-        '3d_cube', 'rainbow_arc', 'chevron', 'circles', 'squares', 
-        'gradient_strip', 'zigzag', 'waves', 'dots', 'tiles'
+        'rectangle_bars', 'hexagon_grid', 'spiral_swirl', 'color_wheel', 
+        'rainbow_arc', 'chevron', 'circles', 'squares', 'gradient_strip', 
+        'zigzag', 'waves', 'dots', 'tiles', '3d_cube'
     ])
 
 if st.button("Generate Palette"):
@@ -139,6 +179,7 @@ if st.button("Generate Palette"):
                 palette += random.sample([c['hex'] for c in COLORS], num_colors - len(palette))
                 st.warning("Palette padded with random colors due to generation constraints.")
             st.session_state.palette = palette
+            st.session_state.display_style = display_style  # Store selected display style
         except Exception as e:
             st.error(f"Error generating palette: {str(e)}")
             st.session_state.palette = None
@@ -147,10 +188,24 @@ if st.button("Generate Palette"):
 if st.session_state.palette:
     with col2:
         st.header(f"{style.replace('_', ' ').upper()} Palette")
+        st.write(f"Selected Display Style: {display_style}")  # Debug: Confirm display style
         
         try:
-            # Rectangle Bars
-            if display_style == 'rectangle_bars':
+            # Matplotlib-based styles
+            if display_style in ['rainbow_arc', 'hexagon_grid', 'spiral_swirl', 'color_wheel']:
+                if display_style == 'rainbow_arc':
+                    fig = render_rainbow_arc(st.session_state.palette)
+                elif display_style == 'hexagon_grid':
+                    fig = render_hexagon_grid(st.session_state.palette)
+                elif display_style == 'spiral_swirl':
+                    fig = render_spiral_swirl(st.session_state.palette)
+                elif display_style == 'color_wheel':
+                    fig = render_color_wheel(st.session_state.palette)
+                st.pyplot(fig)
+                plt.close(fig)  # Close figure to free memory
+            
+            # HTML/CSS-based styles
+            elif display_style == 'rectangle_bars':
                 st.markdown("Rectangle Bars")
                 cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
@@ -161,80 +216,40 @@ if st.session_state.palette:
                             unsafe_allow_html=True
                         )
             
-            # Hexagon Grid
-            elif display_style == 'hexagon_grid':
-                st.markdown("Hexagon Grid")
-                cols = st.columns(5)
+            elif display_style == 'tiles':
+                st.markdown("Tiles")
+                html = "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap:5px;'>"
                 for i, color in enumerate(st.session_state.palette):
-                    with cols[i % 5]:
+                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                    html += f"<div class='palette-box' style='background:{color}; width:80px; height:80px; color:white; padding:5px;'><b>{name}</b><br>{color}</div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == 'squares':
+                st.markdown("Squares")
+                cols = st.columns(len(st.session_state.palette))
+                for i, color in enumerate(st.session_state.palette):
+                    with cols[i]:
                         name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
                         st.markdown(
-                            f"<div class='hexagon palette-box' style='background:{color}; color:white;'><b>{name}</b><br>{color}</div>",
+                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}</div>",
                             unsafe_allow_html=True
                         )
             
-            # Spiral Swirl
-            elif display_style == 'spiral_swirl':
-                st.markdown("Spiral Swirl")
-                html = "<div style='position:relative; width:300px; height:300px; margin:auto;'>"
+            elif display_style == 'circles':
+                st.markdown("Circles")
+                cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
-                    angle = i * 137.5  # Golden angle
-                    radius = 20 * (i + 1) ** 0.5
-                    x = 150 + radius * 0.5 * (i + 1) * 0.1 * (angle % 360)
-                    y = 150 + radius * 0.5 * (i + 1) * 0.1 * (angle % 360)
-                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                    html += f"<div class='palette-box spiral' style='background:{color}; width:50px; height:50px; position:absolute; left:{x}px; top:{y}px; color:white; text-align:center;'><b>{name}</b></div>"
-                html += "</div>"
-                st.markdown(html, unsafe_allow_html=True)
+                    with cols[i]:
+                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                        st.markdown(
+                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; border-radius:50%; text-align:center; color:white; padding:20px;'><b>{name}</b><br>{color}</div>",
+                            unsafe_allow_html=True
+                        )
             
-            # Mosaic Tiles
-            elif display_style == 'mosaic_tiles':
-                st.markdown("Mosaic Tiles")
-                html = "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap:5px;'>"
-                for i, color in enumerate(st.session_state.palette):
-                    width = random.randint(50, 100)
-                    height = random.randint(50, 100)
-                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                    html += f"<div class='palette-box' style='background:{color}; width:{width}px; height:{height}px; color:white; padding:5px;'><b>{name}</b><br>{color}</div>"
-                html += "</div>"
-                st.markdown(html, unsafe_allow_html=True)
-            
-            # Color Wheel
-            elif display_style == 'color_wheel':
-                st.markdown("Color Wheel")
-                html = "<div class='color-wheel'>"
-                for i, color in enumerate(st.session_state.palette):
-                    angle = i * (360 / len(st.session_state.palette))
-                    x = 150 + 100 * (angle * 3.14159 / 180)
-                    y = 150 + 100 * (angle * 3.14159 / 180)
-                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                    html += f"<div class='palette-box' style='background:{color}; width:60px; height:60px; border-radius:50%; position:absolute; left:{x}px; top:{y}px; color:white; text-align:center;'><b>{name}</b></div>"
-                html += "</div>"
-                st.markdown(html, unsafe_allow_html=True)
-            
-            # 3D Cube
-            elif display_style == '3d_cube':
-                st.markdown("3D Cube")
-                html = "<div style='perspective:1000px; width:200px; height:200px; margin:auto;'>"
-                faces = min(len(st.session_state.palette), 6)
-                for i in range(faces):
-                    color = st.session_state.palette[i]
-                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                    transform = {
-                        0: "rotateY(0deg) translateZ(100px)",
-                        1: "rotateY(90deg) translateZ(100px)",
-                        2: "rotateY(180deg) translateZ(100px)",
-                        3: "rotateY(-90deg) translateZ(100px)",
-                        4: "rotateX(90deg) translateZ(100px)",
-                        5: "rotateX(-90deg) translateZ(100px)"
-                    }.get(i, "translateZ(100px)")
-                    html += f"<div class='palette-box cube-face' style='background:{color}; width:100px; height:100px; position:absolute; transform:{transform}; color:white; display:flex; align-items:center; justify-content:center;'><b>{name}</b><br>{color}</div>"
-                html += "</div>"
-                st.markdown(html, unsafe_allow_html=True)
-            
-            # Fallback for other styles (e.g., rainbow_arc, chevron, etc.)
+            # Fallback for unimplemented styles
             else:
-                st.markdown(f"{display_style.replace('_', ' ').title()}")
+                st.markdown(f"{display_style.replace('_', ' ').title()} (Fallback)")
                 cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
                     with cols[i]:
