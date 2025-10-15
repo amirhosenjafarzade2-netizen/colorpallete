@@ -30,12 +30,12 @@ def complementary_color(hex_color):
     comp_h = (hsl[0] + 0.5) % 1.0
     return rgb_to_hex(hsl_to_rgb((comp_h, hsl[1], hsl[2])))
 
-def analogous_colors(hex_color, num=2):
+def analogous_colors(hex_color, num=2, hue_shift=0.0833):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     analogs = []
     for i in range(1, num + 1):
-        for direction in [0.0833, -0.0833]:  # ±30°
+        for direction in [hue_shift, -hue_shift]:  # Adjustable hue shift
             ana_h = (hsl[0] + i * direction) % 1.0
             analogs.append(rgb_to_hex(hsl_to_rgb((ana_h, hsl[1], hsl[2]))))
     return analogs[:num]
@@ -59,8 +59,7 @@ def monochrome_colors(hex_color, num=4):
         monos.append(rgb_to_hex(hsl_to_rgb(mono_hsl)))
     return monos
 
-def wes_anderson_colors(base_hex, num=5):
-    # Pick a random Wes palette and adjust to match base hue
+def wes_anderson_colors(base_hex, num=5, saturation_boost=0.5):
     wes = random.choice(WES_PALETTES)
     rgb = hex_to_rgb(base_hex)
     base_hsl = rgb_to_hsl(rgb)
@@ -68,61 +67,61 @@ def wes_anderson_colors(base_hex, num=5):
     for c in wes:
         c_rgb = hex_to_rgb(c)
         c_hsl = rgb_to_hsl(c_rgb)
-        adj_hsl = (base_hsl[0], c_hsl[1] * 0.8, c_hsl[2] * 0.9)  # Pastel-ize
+        adj_hsl = (base_hsl[0], min(1.0, c_hsl[1] * (0.8 + saturation_boost)), c_hsl[2] * 0.9)
         adjusted.append(rgb_to_hex(hsl_to_rgb(adj_hsl)))
     return random.sample(adjusted, min(num, len(adjusted)))
 
-def warm_colors(hex_color, num=5):
+def warm_colors(hex_color, num=5, hue_shift=0.0833, saturation_boost=0.5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
-    warm_h = 0.0833  # Shift to orange/red
+    warm_h = hue_shift  # Shift to orange/red
     warm = []
     for i in range(num):
-        w_hsl = ((hsl[0] + warm_h) % 1.0, hsl[1], hsl[2] + i*0.05 - 0.1)
+        w_hsl = ((hsl[0] + warm_h) % 1.0, min(1.0, hsl[1] + saturation_boost * (random.random() - 0.5)), hsl[2] + i*0.05 - 0.1)
         warm.append(rgb_to_hex(hsl_to_rgb(w_hsl)))
     return warm
 
-def cool_colors(hex_color, num=5):
+def cool_colors(hex_color, num=5, hue_shift=0.5, saturation_boost=0.5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
-    cool_h = 0.5  # Shift to blue/green
+    cool_h = hue_shift  # Shift to blue/green
     cool = []
     for i in range(num):
-        c_hsl = ((hsl[0] + cool_h) % 1.0, hsl[1] * 0.8, hsl[2] - i*0.05)
+        c_hsl = ((hsl[0] + cool_h) % 1.0, min(1.0, hsl[1] * (0.8 + saturation_boost)), hsl[2] - i*0.05)
         cool.append(rgb_to_hex(hsl_to_rgb(c_hsl)))
     return cool
 
-def pastel_colors(hex_color, num=5):
+def pastel_colors(hex_color, num=5, saturation_boost=0.5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     pastels = []
     for i in range(num):
-        p_hsl = (hsl[0], hsl[1] * 0.5, min(0.9, hsl[2] + 0.2 + i*0.05))
+        p_hsl = (hsl[0], hsl[1] * (0.5 * saturation_boost), min(0.9, hsl[2] + 0.2 + i*0.05))
         pastels.append(rgb_to_hex(hsl_to_rgb(p_hsl)))
     return pastels
 
-def vibrant_colors(hex_color, num=5):
+def vibrant_colors(hex_color, num=5, saturation_boost=0.5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     vibrants = []
     for i in range(num):
-        v_hsl = (hsl[0], min(1.0, hsl[1] + 0.3), hsl[2])
+        v_hsl = (hsl[0], min(1.0, hsl[1] + 0.3 * saturation_boost), hsl[2])
         vibrants.append(rgb_to_hex(hsl_to_rgb(v_hsl)))
     return vibrants
 
-def earth_tones(hex_color, num=5):
+def earth_tones(hex_color, num=5, saturation_boost=0.5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     earth = []
     for i in range(num):
-        e_hsl = (0.0833, hsl[1] * 0.4, hsl[2] * 0.6 + i*0.1 - 0.2)
+        e_hsl = (0.0833, hsl[1] * (0.4 * saturation_boost), hsl[2] * 0.6 + i*0.1 - 0.2)
         earth.append(rgb_to_hex(hsl_to_rgb(e_hsl)))
     return earth
 
-def split_complementary_colors(hex_color, num=3):
+def split_complementary_colors(hex_color, num=3, hue_shift=0.0833):
     comp = complementary_color(hex_color)
-    analogs = analogous_colors(comp)
-    return [hex_color, comp] + analogs[:num-2]
+    analogs = analogous_colors(comp, num=num-2, hue_shift=hue_shift)
+    return [hex_color, comp] + analogs
 
 def tetradic_colors(hex_color):
     comp = complementary_color(hex_color)
@@ -134,12 +133,11 @@ def square_colors(hex_color):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     squares = []
-    for i in [1,2,3]:
+    for i in [1, 2, 3]:
         s_h = (hsl[0] + i*0.25) % 1.0
         squares.append(rgb_to_hex(hsl_to_rgb((s_h, hsl[1], hsl[2]))))
     return [hex_color] + squares
 
-# NEW: Gradient (smooth transitions from base to complement)
 def gradient_colors(hex_color, num=5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
@@ -149,7 +147,6 @@ def gradient_colors(hex_color, num=5):
         gradients.append(rgb_to_hex(hsl_to_rgb(g_hsl)))
     return gradients
 
-# NEW: Shades (darker variations)
 def shades_colors(hex_color, num=5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
@@ -159,7 +156,6 @@ def shades_colors(hex_color, num=5):
         shades.append(rgb_to_hex(hsl_to_rgb(s_hsl)))
     return shades
 
-# NEW: Tints (lighter variations)
 def tints_colors(hex_color, num=5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
@@ -169,68 +165,125 @@ def tints_colors(hex_color, num=5):
         tints.append(rgb_to_hex(hsl_to_rgb(t_hsl)))
     return tints
 
-# NEW: Tones (grayer, desaturated variations)
-def tones_colors(hex_color, num=5):
+def tones_colors(hex_color, num=5, saturation_boost=0.5):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     tones = []
     for i in range(num):
-        t_hsl = (hsl[0], max(0.2, hsl[1] - i*0.2), hsl[2])
+        t_hsl = (hsl[0], max(0.2, hsl[1] - i*0.2 * saturation_boost), hsl[2])
         tones.append(rgb_to_hex(hsl_to_rgb(t_hsl)))
     return tones
 
-# NEW: Neutral (desaturated complements for balance)
-def neutral_colors(hex_color, num=5):
+def neutral_colors(hex_color, num=5, saturation_boost=0.5):
     comp = complementary_color(hex_color)
     rgb = hex_to_rgb(comp)
     hsl = rgb_to_hsl(rgb)
     neutrals = []
     for i in range(num):
-        n_hsl = (hsl[0], hsl[1] * 0.3, hsl[2] * 0.7 + i*0.05)
+        n_hsl = (hsl[0], hsl[1] * (0.3 * saturation_boost), hsl[2] * 0.7 + i*0.05)
         neutrals.append(rgb_to_hex(hsl_to_rgb(n_hsl)))
     return [hex_color] + neutrals[:num-1]
 
-# NEW: High Contrast (optimized for accessibility, e.g., WCAG contrast)
-def high_contrast_colors(hex_color, num=5):
-    # Simple simulation: alternate light/dark with high saturation
+def high_contrast_colors(hex_color, num=5, hue_shift=0.1):
     rgb = hex_to_rgb(hex_color)
     hsl = rgb_to_hsl(rgb)
     contrasts = []
     for i in range(num):
-        c_hsl = ((hsl[0] + i*0.1) % 1.0, min(1.0, hsl[1] + 0.2), 0.3 if i % 2 == 0 else 0.7)
+        c_hsl = ((hsl[0] + i*hue_shift) % 1.0, min(1.0, hsl[1] + 0.2), 0.3 if i % 2 == 0 else 0.7)
         contrasts.append(rgb_to_hex(hsl_to_rgb(c_hsl)))
     return contrasts
 
-def generate_palette(base_hex, style='random', num_colors=5):
+def split_analogous_colors(hex_color, num=5, hue_shift=0.1667, saturation_boost=0.5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    analogs = []
+    for i in range(1, num):
+        offset = hue_shift if i % 2 == 0 else -hue_shift  # ±60°
+        new_h = (hsl[0] + (i // 2) * offset) % 1.0
+        new_s = min(1.0, hsl[1] + saturation_boost * (random.random() - 0.5))
+        new_l = min(1.0, hsl[2] + (random.random() - 0.5) * 0.2)
+        rgb = hsl_to_rgb((new_h, new_s, new_l))
+        analogs.append(rgb_to_hex(rgb))
+    return [hex_color] + analogs[:num-1]
+
+def double_complementary_colors(hex_color, num=5, hue_shift=0.0417, saturation_boost=0.5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    comp_h = (hsl[0] + 0.5) % 1.0
+    doubles = []
+    for i in range(1, num):
+        base_offset = 0.5 if i % 2 == 0 else hue_shift * (1 if i % 4 < 2 else -1)  # ±15°
+        new_h = (hsl[0] + base_offset + (i // 2) * hue_shift) % 1.0
+        new_s = min(1.0, hsl[1] + saturation_boost * (random.random() - 0.5))
+        new_l = min(1.0, hsl[2] + (random.random() - 0.5) * 0.2)
+        rgb = hsl_to_rgb((new_h, new_s, new_l))
+        doubles.append(rgb_to_hex(rgb))
+    return [hex_color] + doubles[:num-1]
+
+def golden_ratio_colors(hex_color, num=5, hue_shift=0.618033988749895, saturation_boost=0.5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    golden = []
+    for i in range(1, num):
+        new_h = (hsl[0] + i * hue_shift) % 1.0
+        new_s = min(1.0, hsl[1] + saturation_boost * (random.random() - 0.5))
+        new_l = min(1.0, hsl[2] + (random.random() - 0.5) * 0.2)
+        rgb = hsl_to_rgb((new_h, new_s, new_l))
+        golden.append(rgb_to_hex(rgb))
+    return [hex_color] + golden[:num-1]
+
+def random_harmony_colors(hex_color, num=5):
+    base_color = next((c for c in COLORS if c['hex'].upper() == hex_color.upper()), None)
+    if base_color:
+        theme = random.choice([base_color['vibe'], base_color['why_underrated']]).lower()
+        similar_colors = [c for c in COLORS if theme in c['vibe'].lower() or theme in c['why_underrated'].lower()]
+        if similar_colors:
+            return [hex_color] + random.sample([c['hex'] for c in similar_colors], min(num-1, len(similar_colors)))
+    return [hex_color] + random.sample([c['hex'] for c in COLORS], min(num-1, len(COLORS)))
+
+def biomimicry_colors(hex_color, num=5):
+    ecosystems = ['coral', 'forest', 'desert', 'ocean', 'meadow']
+    theme = random.choice(ecosystems)
+    similar_colors = [c for c in COLORS if theme in c['vibe'].lower() or theme in c['why_underrated'].lower()]
+    if similar_colors:
+        return [hex_color] + random.sample([c['hex'] for c in similar_colors], min(num-1, len(similar_colors)))
+    return [hex_color] + random.sample([c['hex'] for c in COLORS], min(num-1, len(COLORS)))
+
+def generate_palette(base_hex, style='random', num_colors=5, hue_shift=0.1, saturation_boost=0.5):
+    """
+    Generate a color palette based on the base hex color and style.
+    """
+    # Ensure base_hex is uppercase for consistency
+    base_hex = base_hex.upper()
+    
     if style == 'random':
         return random.sample([c['hex'] for c in COLORS], min(num_colors, len(COLORS)))
     elif style == 'complementary':
-        return [base_hex, complementary_color(base_hex)] + analogous_colors(base_hex, num_colors-2)
+        return [base_hex] + [complementary_color(base_hex)] + analogous_colors(base_hex, num_colors-2, hue_shift)
     elif style == 'analogous':
-        return [base_hex] + analogous_colors(base_hex, num_colors-1)
+        return [base_hex] + analogous_colors(base_hex, num_colors-1, hue_shift)
     elif style == 'triadic':
-        return [base_hex] + triadic_colors(base_hex) + analogous_colors(base_hex, num_colors-3)
+        return [base_hex] + triadic_colors(base_hex) + analogous_colors(base_hex, num_colors-3, hue_shift)
     elif style == 'monochrome':
         return [base_hex] + monochrome_colors(base_hex, num_colors-1)
     elif style == 'wes_anderson':
-        return wes_anderson_colors(base_hex, num_colors)
+        return wes_anderson_colors(base_hex, num_colors, saturation_boost)
     elif style == 'warm':
-        return warm_colors(base_hex, num_colors)
+        return warm_colors(base_hex, num_colors, hue_shift, saturation_boost)
     elif style == 'cool':
-        return cool_colors(base_hex, num_colors)
+        return cool_colors(base_hex, num_colors, hue_shift, saturation_boost)
     elif style == 'pastel':
-        return pastel_colors(base_hex, num_colors)
+        return pastel_colors(base_hex, num_colors, saturation_boost)
     elif style == 'vibrant':
-        return vibrant_colors(base_hex, num_colors)
+        return vibrant_colors(base_hex, num_colors, saturation_boost)
     elif style == 'earth_tones':
-        return earth_tones(base_hex, num_colors)
+        return earth_tones(base_hex, num_colors, saturation_boost)
     elif style == 'split_complementary':
-        return split_complementary_colors(base_hex, num_colors)
+        return split_complementary_colors(base_hex, num_colors, hue_shift)
     elif style == 'tetradic':
         return tetradic_colors(base_hex)[:num_colors]
     elif style == 'square':
         return square_colors(base_hex)[:num_colors]
-    # NEW STYLES
     elif style == 'gradient':
         return gradient_colors(base_hex, num_colors)
     elif style == 'shades':
@@ -238,9 +291,24 @@ def generate_palette(base_hex, style='random', num_colors=5):
     elif style == 'tints':
         return tints_colors(base_hex, num_colors)
     elif style == 'tones':
-        return tones_colors(base_hex, num_colors)
+        return tones_colors(base_hex, num_colors, saturation_boost)
     elif style == 'neutral':
-        return neutral_colors(base_hex, num_colors)
+        return neutral_colors(base_hex, num_colors, saturation_boost)
     elif style == 'high_contrast':
-        return high_contrast_colors(base_hex, num_colors)
-    return [base_hex]
+        return high_contrast_colors(base_hex, num_colors, hue_shift)
+    elif style == 'split_analogous':
+        return split_analogous_colors(base_hex, num_colors, hue_shift, saturation_boost)
+    elif style == 'double_complementary':
+        return double_complementary_colors(base_hex, num_colors, hue_shift, saturation_boost)
+    elif style == 'golden_ratio':
+        return golden_ratio_colors(base_hex, num_colors, hue_shift, saturation_boost)
+    elif style == 'random_harmony':
+        return random_harmony_colors(base_hex, num_colors)
+    elif style == 'biomimicry':
+        return biomimicry_colors(base_hex, num_colors)
+    
+    # Fallback: Return base color with random colors
+    palette = [base_hex]
+    if num_colors > 1:
+        palette += random.sample([c['hex'] for c in COLORS], min(num_colors-1, len(COLORS)))
+    return list(dict.fromkeys(palette))[:num_colors]  # Ensure unique colors
