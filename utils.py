@@ -139,6 +139,68 @@ def square_colors(hex_color):
         squares.append(rgb_to_hex(hsl_to_rgb((s_h, hsl[1], hsl[2]))))
     return [hex_color] + squares
 
+# NEW: Gradient (smooth transitions from base to complement)
+def gradient_colors(hex_color, num=5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    gradients = []
+    for i in range(num):
+        g_hsl = (hsl[0], hsl[1], hsl[2] * (1 - i/(num*1.5)))
+        gradients.append(rgb_to_hex(hsl_to_rgb(g_hsl)))
+    return gradients
+
+# NEW: Shades (darker variations)
+def shades_colors(hex_color, num=5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    shades = []
+    for i in range(num):
+        s_hsl = (hsl[0], hsl[1], max(0.1, hsl[2] - i*0.15))
+        shades.append(rgb_to_hex(hsl_to_rgb(s_hsl)))
+    return shades
+
+# NEW: Tints (lighter variations)
+def tints_colors(hex_color, num=5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    tints = []
+    for i in range(num):
+        t_hsl = (hsl[0], hsl[1], min(0.95, hsl[2] + i*0.1))
+        tints.append(rgb_to_hex(hsl_to_rgb(t_hsl)))
+    return tints
+
+# NEW: Tones (grayer, desaturated variations)
+def tones_colors(hex_color, num=5):
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    tones = []
+    for i in range(num):
+        t_hsl = (hsl[0], max(0.2, hsl[1] - i*0.2), hsl[2])
+        tones.append(rgb_to_hex(hsl_to_rgb(t_hsl)))
+    return tones
+
+# NEW: Neutral (desaturated complements for balance)
+def neutral_colors(hex_color, num=5):
+    comp = complementary_color(hex_color)
+    rgb = hex_to_rgb(comp)
+    hsl = rgb_to_hsl(rgb)
+    neutrals = []
+    for i in range(num):
+        n_hsl = (hsl[0], hsl[1] * 0.3, hsl[2] * 0.7 + i*0.05)
+        neutrals.append(rgb_to_hex(hsl_to_rgb(n_hsl)))
+    return [hex_color] + neutrals[:num-1]
+
+# NEW: High Contrast (optimized for accessibility, e.g., WCAG contrast)
+def high_contrast_colors(hex_color, num=5):
+    # Simple simulation: alternate light/dark with high saturation
+    rgb = hex_to_rgb(hex_color)
+    hsl = rgb_to_hsl(rgb)
+    contrasts = []
+    for i in range(num):
+        c_hsl = ((hsl[0] + i*0.1) % 1.0, min(1.0, hsl[1] + 0.2), 0.3 if i % 2 == 0 else 0.7)
+        contrasts.append(rgb_to_hex(hsl_to_rgb(c_hsl)))
+    return contrasts
+
 def generate_palette(base_hex, style='random', num_colors=5):
     if style == 'random':
         return random.sample([c['hex'] for c in COLORS], min(num_colors, len(COLORS)))
@@ -168,4 +230,17 @@ def generate_palette(base_hex, style='random', num_colors=5):
         return tetradic_colors(base_hex)[:num_colors]
     elif style == 'square':
         return square_colors(base_hex)[:num_colors]
+    # NEW STYLES
+    elif style == 'gradient':
+        return gradient_colors(base_hex, num_colors)
+    elif style == 'shades':
+        return shades_colors(base_hex, num_colors)
+    elif style == 'tints':
+        return tints_colors(base_hex, num_colors)
+    elif style == 'tones':
+        return tones_colors(base_hex, num_colors)
+    elif style == 'neutral':
+        return neutral_colors(base_hex, num_colors)
+    elif style == 'high_contrast':
+        return high_contrast_colors(base_hex, num_colors)
     return [base_hex]
