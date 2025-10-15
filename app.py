@@ -45,8 +45,6 @@ def render_hexagon_grid(palette):
             (col + 0.5, row - 0.866), (col, row - 0.5), (col, row)
         ], facecolor=hex_to_rgb_mpl(color))
         ax.add_patch(hexagon)
-        ax.text(col + 0.5, row, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
-                ha='center', va='center', fontsize=8, color='white')
     ax.set_xlim(-0.5, 5.5)
     ax.set_ylim(-1, len(palette) // 5 + 1)
     ax.axis('off')
@@ -60,8 +58,6 @@ def render_spiral_swirl(palette):
         x = 3 + radius * np.cos(angle)
         y = 3 + radius * np.sin(angle)
         ax.add_patch(plt.Circle((x, y), 0.3, color=hex_to_rgb_mpl(color)))
-        ax.text(x, y, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
-                ha='center', va='center', fontsize=6, color='white')
     ax.set_xlim(0, 6)
     ax.set_ylim(0, 6)
     ax.axis('off')
@@ -74,8 +70,6 @@ def render_color_wheel(palette):
         x = 3 + 2 * np.cos(angle)
         y = 3 + 2 * np.sin(angle)
         ax.add_patch(plt.Circle((x, y), 0.5, color=hex_to_rgb_mpl(color)))
-        ax.text(x, y, next((c['name'] for c in COLORS if c['hex'].upper() == color.upper()), "Generated"),
-                ha='center', va='center', fontsize=6, color='white')
     ax.set_xlim(0, 6)
     ax.set_ylim(0, 6)
     ax.axis('off')
@@ -90,6 +84,8 @@ if 'palette' not in st.session_state:
     st.session_state.palette = None
 if 'show_library' not in st.session_state:
     st.session_state.show_library = False
+if 'display_style' not in st.session_state:
+    st.session_state.display_style = 'rectangle_bars'
 
 all_colors = COLORS + st.session_state.custom_colors
 
@@ -179,7 +175,7 @@ if st.button("Generate Palette"):
                 palette += random.sample([c['hex'] for c in COLORS], num_colors - len(palette))
                 st.warning("Palette padded with random colors due to generation constraints.")
             st.session_state.palette = palette
-            st.session_state.display_style = display_style  # Store selected display style
+            st.session_state.display_style = display_style
         except Exception as e:
             st.error(f"Error generating palette: {str(e)}")
             st.session_state.palette = None
@@ -188,7 +184,7 @@ if st.button("Generate Palette"):
 if st.session_state.palette:
     with col2:
         st.header(f"{style.replace('_', ' ').upper()} Palette")
-        st.write(f"Selected Display Style: {display_style}")  # Debug: Confirm display style
+        display_style = st.session_state.display_style
         
         try:
             # Matplotlib-based styles
@@ -202,62 +198,90 @@ if st.session_state.palette:
                 elif display_style == 'color_wheel':
                     fig = render_color_wheel(st.session_state.palette)
                 st.pyplot(fig)
-                plt.close(fig)  # Close figure to free memory
+                plt.close(fig)
             
             # HTML/CSS-based styles
             elif display_style == 'rectangle_bars':
-                st.markdown("Rectangle Bars")
                 cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
                     with cols[i]:
                         name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
                         st.markdown(
-                            f"<div class='palette-box' style='background:{color}; height:150px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}<br><button class='copy-hex' onclick='copyToClipboard(\"{color}\")'>Copy Hex</button></div>",
+                            f"<div class='palette-box' style='background:{color}; height:150px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}<br><button class='copy-hex' onclick='copyToClipboard(\"{color}\")'>Copy</button></div>",
                             unsafe_allow_html=True
                         )
             
             elif display_style == 'tiles':
-                st.markdown("Tiles")
                 html = "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap:5px;'>"
-                for i, color in enumerate(st.session_state.palette):
-                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                    html += f"<div class='palette-box' style='background:{color}; width:80px; height:80px; color:white; padding:5px;'><b>{name}</b><br>{color}</div>"
+                for color in st.session_state.palette:
+                    name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Gen")
+                    html += f"<div class='palette-box' style='background:{color}; width:80px; height:80px; color:white; padding:5px; font-size:10px;'><b>{name}</b><br>{color}</div>"
                 html += "</div>"
                 st.markdown(html, unsafe_allow_html=True)
             
             elif display_style == 'squares':
-                st.markdown("Squares")
                 cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
                     with cols[i]:
                         name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
                         st.markdown(
-                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}</div>",
+                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; text-align:center; color:white; padding:10px; font-size:10px;'><b>{name}</b><br>{color}</div>",
                             unsafe_allow_html=True
                         )
             
             elif display_style == 'circles':
-                st.markdown("Circles")
                 cols = st.columns(len(st.session_state.palette))
                 for i, color in enumerate(st.session_state.palette):
                     with cols[i]:
-                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
+                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Gen")
                         st.markdown(
-                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; border-radius:50%; text-align:center; color:white; padding:20px;'><b>{name}</b><br>{color}</div>",
+                            f"<div class='palette-box' style='background:{color}; width:100px; height:100px; border-radius:50%; text-align:center; color:white; padding:30px 5px; font-size:9px;'><b>{name}</b><br>{color}</div>",
                             unsafe_allow_html=True
                         )
             
-            # Fallback for unimplemented styles
-            else:
-                st.markdown(f"{display_style.replace('_', ' ').title()} (Fallback)")
-                cols = st.columns(len(st.session_state.palette))
+            elif display_style == 'chevron':
+                html = "<div style='display:flex; height:200px;'>"
                 for i, color in enumerate(st.session_state.palette):
-                    with cols[i]:
-                        name = next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated")
-                        st.markdown(
-                            f"<div class='palette-box' style='background:{color}; height:100px; text-align:center; color:white; padding:10px;'><b>{name}</b><br>{color}</div>",
-                            unsafe_allow_html=True
-                        )
+                    offset = (i % 2) * 20
+                    html += f"<div style='background:{color}; flex:1; clip-path:polygon(0 {offset}px, 100% {offset+20}px, 100% calc(100% - {offset}px), 0 calc(100% - {offset+20}px)); margin:0 -5px;'></div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == 'gradient_strip':
+                gradient = ", ".join(st.session_state.palette)
+                html = f"<div style='height:150px; background: linear-gradient(to right, {gradient}); border-radius:10px;'></div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == 'zigzag':
+                html = "<div style='display:flex; height:200px;'>"
+                for i, color in enumerate(st.session_state.palette):
+                    points = "0 50%, 50% 0, 100% 50%, 50% 100%" if i % 2 == 0 else "0 0, 100% 0, 100% 100%, 0 100%"
+                    html += f"<div style='background:{color}; flex:1; clip-path:polygon({points});'></div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == 'waves':
+                html = "<div style='position:relative; height:200px; overflow:hidden;'>"
+                for i, color in enumerate(st.session_state.palette):
+                    offset = i * 30
+                    html += f"<div style='position:absolute; width:100%; height:50px; background:{color}; top:{offset}px; border-radius:50%;'></div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == 'dots':
+                html = "<div style='display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:20px;'>"
+                for color in st.session_state.palette:
+                    html += f"<div style='background:{color}; width:60px; height:60px; border-radius:50%;'></div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+            
+            elif display_style == '3d_cube':
+                html = "<div style='display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; perspective:400px;'>"
+                for i, color in enumerate(st.session_state.palette):
+                    rotation = f"rotateY({i*15}deg)"
+                    html += f"<div style='background:{color}; height:80px; transform:{rotation}; box-shadow:0 4px 8px rgba(0,0,0,0.3);'></div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
             
             # Save palette
             if st.button("Save Palette"):
@@ -267,13 +291,10 @@ if st.session_state.palette:
             # Download palette
             palette_data = [{"name": next((c['name'] for c in all_colors if c['hex'].upper() == color.upper()), "Generated"), "hex": color} for color in st.session_state.palette]
             st.download_button("Download JSON", json.dumps(palette_data, indent=2), "palette.json")
-            
-            # Debug: Show raw palette
-            st.write("Raw Palette Hex Codes:", st.session_state.palette)
         
         except Exception as e:
             st.error(f"Error displaying palette: {str(e)}")
-            st.write("Raw Palette Hex Codes:", st.session_state.palette)
+            st.write("Raw Palette:", st.session_state.palette)
 
 # DISPLAY SAVED PALETTES
 if st.session_state.saved_palettes:
@@ -294,6 +315,6 @@ if st.session_state.show_library:
         st.markdown("**Color Library**")
         html = "<div class='library-grid'>"
         for color in all_colors:
-            html += f"<div class='palette-box' style='background:{color['hex']}; padding:10px; color:white;'><b>{color['name']}</b><br>{color['hex']}<br>Vibe: {color['vibe']}<br>Why: {color['why_underrated']}</div>"
+            html += f"<div class='palette-box' style='background:{color['hex']}; padding:10px; color:white; font-size:11px;'><b>{color['name']}</b><br>{color['hex']}<br>Vibe: {color['vibe']}</div>"
         html += "</div>"
         st.markdown(html, unsafe_allow_html=True)
