@@ -124,7 +124,7 @@ function copyToClipboard(text) {
 """, unsafe_allow_html=True)
 
 st.set_page_config(page_title="Ultimate Color Palette", layout="wide")
-st.markdown("<h1 style='text-align: center; color: white;'>🌈 ULTIMATE 430+ COLOR PALETTE GENERATOR</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: white;'>🌈 ULTIMATE 500+ COLOR PALETTE GENERATOR</h1>", unsafe_allow_html=True)
 
 # SIDEBAR
 with st.sidebar:
